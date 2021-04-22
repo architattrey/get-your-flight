@@ -1,0 +1,447 @@
+<?php
+
+namespace App\Http\Controllers\Booking;
+
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Session;
+Use Auth;
+use Illuminate\Support\Facades\Hash;
+use App\Model\FlightsBooking;
+use Payment;
+use Tzsk\Payu\Model\PayuPayment;
+use Carbon\Carbon;
+use DB;
+
+
+
+
+class BookingController extends Controller
+{
+    public function FlightBookingProcessing($IndexId,$TraceId,$adult,$child,$infant,Request $request)
+    {
+        // dd($request->all());   
+        if($request->gst == 1)
+        {
+            $validatedData = $request->validate([
+                'email'      => 'required|email',
+                'phone'      => 'required|max:10',
+                'address'    => 'required',
+                'city'       => 'required',
+                'gnumber'    => 'required',
+                'gcname'     => 'required',
+                'gemail'     => 'required|email',
+                'gmobile'    => 'required|max:10',
+            ]);
+
+                $gst_data[] =
+                [ 
+                    'gst_number'=>$request->gnumber,
+                    'gst_company_name'=>$request->gcname,
+                    'gst_email'=>$request->gemail,
+                    'gst_mobile' =>$request->gmobile,            
+                ];        
+
+        }else {
+            
+            $validatedData = $request->validate([
+                'email'      => 'required|email',
+                'phone'      => 'required|max:10',
+                'address'    => 'required',
+                'city'       => 'required',
+                ]);
+        }
+
+
+        //============== ADULT DATA CONVER INTO JSON ================//
+        $adult_data = [];
+			$id=0;
+			foreach ($request->aname as $a_key => $a_value) 
+			{            
+                $id++;
+                $adult_data[] =
+                [ 
+                    'id'=> $id,
+                    'title'=>$request->title[$a_key],
+                    'type'=>1, 
+                    'name'=>$request->aname[$a_key],
+                    'last_name'=>$request->alname[$a_key], 
+                    'dob' => Carbon::createFromFormat('d/m/Y', $request->adob[$a_key])->format('Y-m-d'),         
+                ];        
+            }
+                
+             //============== Check Age ================//
+            $dateofbirth = Carbon::createFromFormat('d/m/Y', $request->adob[$a_key]);
+
+            $now = Carbon::now();
+            $adult_age =$dateofbirth->diffInYears(Carbon::now());
+
+            if($adult_age <= 12)
+            {
+                Session::flash('flash_message','Please Check Adult Age.');    
+                return back();
+            }
+
+            //============== CHILD DATA CONVER INTO JSON ================//
+			$childre_data = [];
+			if($request->child !=0)
+			{   
+				$id=0;
+				foreach($request->cname as $c_key => $c_value) {            
+					$id++;
+					$childre_data [] = 
+					[
+                        'id'=> $id,
+                        'title'=>$request->title[$c_key],
+                        'type'=>2,
+                        'name'=>$request->cname[$c_key],
+                        'last_name'=>$request->clname[$c_key],
+                        'dob' => Carbon::createFromFormat('d/m/Y', $request->cdob[$c_key])->format('Y-m-d'),            
+					];        
+                }
+                
+                //============== Check Age ================//
+                $dateofbirth = Carbon::createFromFormat('d/m/Y', $request->cdob[$c_key]);
+
+                $now = Carbon::now();
+                $child_age =$dateofbirth->diffInYears(Carbon::now());
+                if($child_age > 12)
+                {
+                    Session::flash('flash_message','Please Check Child Age.');    
+                    return back();
+                }
+            }
+
+            //============== INFANT DATA CONVER INTO JSON ================//
+            $infant_data = [];
+			if($request->infant !=0)
+			{   
+				$id=0;
+				foreach($request->iname as $i_key => $i_value) {            
+					$id++;
+					$infant_data [] = 
+					[
+                        'id'=> $id,
+                        'title'=>$request->title[$i_key],
+                        'type'=>3,
+                        'name'=>$request->iname[$i_key],
+                        'last_name'=>$request->ilname[$i_key],
+                        // 'dob' =>$request->idob[$i_key],  
+                        'dob' => Carbon::createFromFormat('d/m/Y', $request->idob[$i_key])->format('Y-m-d'),          
+					];        
+				}
+            }
+
+            $adultdata =array_merge($adult_data,$childre_data,$infant_data);
+        
+         //============== DATA SAVE INTO DATABASE ================//   
+         if($request->gst == 1)
+         {
+                $flightsBookings =  FlightsBooking::create([
+                    'index_id'            => $IndexId,
+                    'trace_id'            => $TraceId,
+                    'total_adults'        => $adult,
+                    'total_childrens'     => $child,   
+                    'adults_details'      => json_encode($adultdata),
+                    'childrens_details'   => json_encode($childre_data),
+                    'phone'               =>$request['phone'],
+                    'email'               =>$request['email'],
+                    'amount'              =>$request['amount'],
+                    'address'             =>$request['address'],
+                    'city'                =>$request['city'],
+                    'iss_gst'             =>1,
+                    'gst_details'         =>json_encode($gst_data),
+                    'status'              =>0,
+                ]);
+
+         }else{
+
+                $flightsBookings =  FlightsBooking::create([
+                    'index_id'            => $IndexId,
+                    'trace_id'            => $TraceId,
+                    'total_adults'        => $adult,
+                    'total_childrens'     => $child,   
+                    'adults_details'      => json_encode($adultdata),
+                    'childrens_details'   => json_encode($childre_data),
+                    'phone'               =>$request['phone'],
+                    'email'               =>$request['email'],
+                    'amount'              =>$request['amount'],
+                    'address'             =>$request['address'],
+                    'city'                =>$request['city'],
+                    'iss_gst'             =>0,
+                    'status'              =>0,
+                ]);
+         } 
+
+        //============== PAYMENT METHOD ================//
+        $attributes = [
+            'txnid'     => strtoupper(str_random(8)), # Transaction ID.
+            'amount'    => floatval($request['amount']), # Amount to be charged.
+            'productinfo'=> $IndexId,
+            'firstname' => $request->aname[0],
+            'phone'     => $request['phone'],
+            'email'     => $request['email']
+        ];    
+
+        $isslcc = $request->isslcc;
+       
+        return Payment::make($attributes, function ($then) use($flightsBookings, $isslcc) {   //to go payment gateway
+            $then->redirectRoute('flight_payment', ['id' => $flightsBookings['id'], 'isllc' => $isslcc]);
+        });
+
+    }
+
+
+    //============== ADULT DATA CONVER INTO JSON ================//
+    public function FlightPayment($id,$islcc) 
+    {
+        $payment   = Payment::capture();
+        // $dataa = null;
+       $dataa = PayuPayment::create((array)$payment->getData());
+        $responsed = collect($payment->getData());
+        $flightsBooking   = FlightsBooking::where('id', $id)->first();
+
+        // return $flightsBooking->adults_details;
+        if($flightsBooking) {
+            $order = $flightsBooking->orders()->where('orderable_id',$id)->where('orderable_type','App\FlightsBooking')->first();
+            
+            if (!$order) {
+
+                $booking = $this->booking($flightsBooking->trace_id, $flightsBooking->index_id,$flightsBooking,$islcc);
+                // return $booking;
+                
+                if($booking['success']) {
+                   // return $booking;
+                    $flightsBooking->orders()->create(['payu_id' => $dataa->id]);
+                   
+                }
+                $flightsBooking->update(['response' => json_encode(['data'=>$booking['data']])]);
+                return redirect()->route('booking_details',[1,2]);
+                // return collect($flightsBooking);
+               
+            } else {
+                return redirect()->route('/');
+            }
+        }else {
+            return redirect()->route('/');
+        }
+              //return $responsed;
+    }
+
+    private function farequete($index, $traceId)
+	{
+		$data=array(
+			"EndUserIp" =>  "35.154.103.142",
+			"TokenId" =>  "c7fa5549-f499-459d-a049-cd7bc7927a5c",
+			"TraceId" =>  $traceId,
+			"ResultIndex" =>  $index
+
+ 		);
+		$auth_data=json_encode($data);
+    	$curl = curl_init();
+		// curl_setopt($curl, CURLOPT_URL,"http://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest/SSR/");
+		curl_setopt($curl, CURLOPT_URL,"http://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest/FareQuote/");
+		// curl_setopt($curl, CURLOPT_URL,"http://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest/FareRule/");
+    	curl_setopt($curl, CURLOPT_POST, 1);
+    	curl_setopt( $curl, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
+		curl_setopt($curl, CURLOPT_POSTFIELDS,$auth_data);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+    	$responce=curl_exec ($curl);
+	    $responce_data = json_decode($responce, true);
+		curl_close ($curl);
+		
+		if ($responce_data['Response']['Error']['ErrorCode'] == 0) {
+
+			$results = [$responce_data['Response']['Results']];
+			$results  = $this->removing_fare($results);
+			$resultdata = $responce_data['Response'];
+			unset($resultdata['Results']);
+			$resultdata['Results'] = $results[0];
+			$responce_data = $resultdata;
+			// return collect($resultdata);
+		}else {
+			$responce_data = $responce_data['Response'];
+		}
+
+	    return ['data' => $responce_data];
+    }
+
+    
+    private function booking($traceid, $indexid,$flightsBooking,$islcc)
+	{
+		$data = [
+			"EndUserIp" =>  "35.154.103.142",
+			"TokenId" =>  "c7fa5549-f499-459d-a049-cd7bc7927a5c",
+			"TraceId" => $traceid,
+			"ResultIndex" =>  $indexid,
+			"Passengers" => $this->passenger_details($flightsBooking)
+        ];
+        // return ['data' => $data, 'success' => true];
+		//return $data;
+
+		$auth_data=json_encode($data);
+        $curl = curl_init();
+        if($islcc ==1)
+        {
+            curl_setopt($curl, CURLOPT_URL,"http://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest/Ticket/");
+
+        }else{
+            curl_setopt($curl, CURLOPT_URL,"http://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest/Book/");
+        }
+    	
+    	curl_setopt($curl, CURLOPT_POST, 1);
+	    curl_setopt( $curl, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
+    	curl_setopt($curl, CURLOPT_POSTFIELDS,$auth_data);
+    	curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+    	// curl_setopt( $curl, CURLOPT_HTTPHEADER, ['Accept:application/json, Content-Type:application/json']);
+		
+		$responce = curl_exec ($curl);
+		curl_close ($curl);
+        $responce_data = json_decode($responce, true);
+        
+        if ($responce_data['Response']['Error']['ErrorCode'] == 0) {
+            $resultdata = collect($responce_data['Response']);
+            
+            if($islcc != 1)
+            {
+                // return $resultdata;
+                return $this->ticket($indexid,$resultdata->Response->TraceId,$resultdata->Response->PNR);
+
+            }else {
+                return ['data' => $responce_data, 'success' => true];
+            }
+            // return collect($resultdata);
+        }else {
+            $responce_data = $responce_data['Response'];
+            return ['data' => $responce_data, 'success' => false];
+        }
+    }
+
+
+    private function ticket($index,$traceId,$pnr)
+	{
+		$data = [
+			"EndUserIp" =>  "35.154.103.142",
+			"TokenId" =>  "c7fa5549-f499-459d-a049-cd7bc7927a5c",
+			"TraceId" =>  $traceId,
+			"PNR" =>  $pnr,
+			"BookingId" => $index
+		];
+
+		$auth_data=json_encode($data);
+    	$curl = curl_init();
+    	curl_setopt($curl, CURLOPT_URL,"http://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest/Ticket/");
+    	curl_setopt($curl, CURLOPT_POST, 1);
+	    curl_setopt( $curl, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
+    	curl_setopt($curl, CURLOPT_POSTFIELDS,$auth_data);
+    	curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+    	// curl_setopt( $curl, CURLOPT_HTTPHEADER, ['Accept:application/json, Content-Type:application/json']);
+		
+		$responce = curl_exec ($curl);
+		curl_close ($curl);
+		$responce_data = json_decode($responce, true);
+
+		if ($responce_data['Response']['Error']['ErrorCode'] == 0) {
+            $resultdata = $responce_data['Response'];
+            return ['data' => $responce_data, 'success' => true];
+            // return collect($resultdata);
+        }else {
+            $responce_data = $responce_data['Response'];
+            return ['data' => $responce_data, 'success' => false];
+        }
+    }
+
+
+    //============== HERE IS ALL PASSENGER DETAILS BIND INTO LOOP ================//
+    private function passenger_details($flightsBooking)
+    {
+        $passenger = [];
+        $passengers_data =json_decode($flightsBooking->adults_details);
+
+        foreach($passengers_data as $key => $passenger_data){
+
+            $dob =  $passenger_data->dob."T00:00:00";
+            if ($passenger_data->title == 1 and $passenger_data->type == 1) {
+                $type_title = "Mr";
+                $gender = 1;
+                $pax_type = 1;
+            } elseif ($passenger_data->title == 1 and $passenger_data->type == 2) {
+                $type_title = "Master";
+                $gender = 1;
+                $pax_type = 2;
+            } elseif($passenger_data->title == 2 and $passenger_data->type == 1){
+                $type_title = "Ms";
+                $gender = 2;
+                $pax_type = 1;
+            }elseif ($passenger_data->title == 2 and $passenger_data->type == 2) {
+                $type_title = "Miss";
+                $gender = 2;
+                $pax_type = 1;
+            } elseif($passenger_data->title == 3 and $passenger_data->type == 1){
+                $type_title = "Mrs";
+                $gender = 2;
+                $pax_type = 1;
+            }elseif ($passenger_data->title == 1 and $passenger_data->type == 3) {
+                $type_title = "Master";
+                $gender = 1;
+                $pax_type = 3;
+            }else{
+                $type_title = "Miss";
+                $gender = 2;
+                $pax_type = 3;
+            }
+            
+            $data = [
+                "Title" =>  $type_title,
+                "FirstName" => $passenger_data->name,
+                "LastName" =>  $passenger_data->last_name,
+                "PaxType" =>  $pax_type,
+                "DateOfBirth" =>  $dob,
+                "Gender" => $gender,
+                "PassportNo" =>  "",
+                "PassportExpiry" =>  "",
+                "AddressLine1" => $flightsBooking->address,
+                "AddressLine2" => "",
+                "City" => $flightsBooking->city,
+                "CountryCode" => "IN",
+                "CountryName" => "India",
+                "ContactNo" => $flightsBooking->phone,
+                "Email" =>  $flightsBooking->email,
+                "IsLeadPax" =>  $key == 0 ? true : false,
+                "FFAirline" => "",
+                "FFNumber" => "",
+                "Fare" => [
+                    "BaseFare" => 1,
+                    "Tax" =>  1,
+                    "TransactionFee" =>  1,
+                    "YQTax" =>  1,
+                    "AdditionalTxnFeeOfrd" =>  0,
+                    "AdditionalTxnFeePub" =>  1,
+                    "AirTransFee" =>  1
+                ],
+                "Seat" =>  [
+                        "Code" => "A",
+                        "Description" =>  "Aisle"
+                ]
+            ];
+
+            array_push($passenger,$data);
+        }
+        return $passenger;
+    }
+
+    public function BookingDetails($id,$TraceId)
+    {
+        
+        return view('air.booking.booking_form_response');
+    }
+
+    public function GetlatestData()
+    {
+
+        $last_row = FlightsBooking::latest()->first();
+
+        return $last_row;
+     
+    }
+}

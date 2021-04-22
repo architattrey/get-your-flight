@@ -1,0 +1,714 @@
+@extends('home.layouts.app',['cssclass' => 'home'])
+@section('css')
+    <style>
+        .activeclass {
+            transform: scale(1.1);
+            background: #f4364f;
+            background: linear-gradient(to bottom,#f4364f,#dc2039);
+            border: 1px solid #d41e36;
+        }
+        
+    </style>
+@endsection
+@section('content')
+@if(Session::has('flash_message'))
+         <div class="alert alert-info" style="background-color:pink;"><span class="glyphicon glyphicon-ok"></span><em> {!! session('flash_message') !!}</em></div>
+        @endif
+<!--HEADER SECTION-->
+  <section> 
+        <div class="tourz-search"  ng-controller="validateCtrl" ng-app="myApp">
+            <div class="container">
+                <div class="row">
+                    <div class="tourz-search-1">
+                      <h1>Plan Your Travel Now!</h1>
+                        <p>Experience the various exciting tour and travel packages and Make hotel reservations, find vacation packages, search cheap hotels and events</p>
+                       
+                        <div class="tourz-hom-ser">
+                            <ul class="nav nav-tabs">
+                                <li class="active">
+                                    <a data-toggle="tab" value="1" href="#flights" class="tab_switch waves-effect waves-light btn-large tourz-pop-ser-btn wow fadeInUp" data-wow-duration="0.5s"><img src="images/icon/31.png" alt=""> Flight</a>
+                                </li>
+                                <li>
+                                    <a data-toggle="tab" value="2" href="#hotels" class="tab_switch waves-effect waves-light btn-large tourz-pop-ser-btn wow fadeInUp" data-wow-duration="1s"><img src="images/icon/1.png" alt=""> Hotel</a>
+                                </li>
+                                <li>
+                                    <a data-toggle="tab" value="3" href="#tours" class="tab_switch waves-effect waves-light btn-large tourz-pop-ser-btn wow fadeInUp" data-wow-duration="1.5s"><img src="images/icon/2.png" alt=""> Tour</a>
+                                </li>
+                                
+                                <li>
+                                    <a data-toggle="tab" value="4" href="#buses" class="tab_switch waves-effect waves-light btn-large tourz-pop-ser-btn wow fadeInUp" data-wow-duration="2s"><img src="images/icon/30.png" alt=""> Bus</a>
+                                </li>
+                                <li>
+                                    <a data-toggle="tab" value="5" href="#visas" class="tab_switch waves-effect waves-light btn-large tourz-pop-ser-btn wow fadeInUp" data-wow-duration="2s"><img src="images/icon/30.png" alt=""> Visa</a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div>
+                        <div class="tab-content" >
+
+                            <div id="flights" class="tab-pane fade in active">
+                                <form class="v2-search-form" name="myForm1" action="/air/getairdata">
+                                    <div class="row">
+                                        <div class="input-field col s2 sm12">
+                                            <input type="text" id="flying_from" name="flying_from" class="flying_code" placeholder="Flying From" ng-model="flying_from" autocomplete="off" required>
+                                            <label for="select-city">Flying From</label>
+                                            <span style="color:red" ng-show="myForm1.flying_from.$touched && myForm1.flying_from.$invalid">This feild is required.</span>
+                                        </div>
+                                        <div class="input-field col s2 sm12">
+                                            <input type="text" id="flying_to" name="flying_to" class="flying_code" placeholder="Flying To" ng-model="flying_to" autocomplete="off" required>
+                                            <label for="select-city">Flying To</label>
+                                            <span style="color:red" ng-show="myForm1.flying_to.$touched && myForm1.flying_to.$invalid">This feild is required.</span>
+                                        </div>
+                                        
+                                        <div class="input-field col s2 sm12">
+                                            <input type="text" id="to" name="departure_date" required>
+                                            <label for="to">Departure Date</label>
+                                        </div>
+
+                                        <div class="input-field col s2 sm12">
+                                            <input type="text" id="from" name="arrival_date">
+                                            <label for="from">Arrival Date</label>
+                                        </div>
+                                        <div class="input-field col s1 sm12">
+                                            <select name="no_of_adults" required>
+                                                <option value="" disabled selected>No of adults</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="1">4</option>
+                                                <option value="1">5</option>
+                                                <option value="1">6</option>
+                                            </select>
+                                        </div>
+                                        <div class="input-field col s1 sm12">
+                                            <select name="no_of_child">
+                                                <option value="">No of childrens</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="1">4</option>
+                                                <option value="1">5</option>
+                                                <option value="1">6</option>                      
+                                            </select>
+                                        </div>
+                                        <div class="input-field col s2">
+                                           <input type="submit" value="search" class="waves-effect waves-light tourz-sear-btn v2-ser-btn" ng-click="formsubmit(myForm1.$valid,myForm1)"  ng-disabled="myForm1.$invalid">
+                                        </div>
+                                    </div><br>
+
+                                    <div class="row"  ng-show="options.length > 0" ng-repeat="(index, option) in options track by $index">
+                                        <div class="form-line tab-content">
+                                            <div class="row" style=" margin-left: 38px;">
+                                                <div class="input-field col s2 sm12">
+                                                    <input type="text" id="flying_from" name="flying_from[]" class="autocomplete flying_code" style="margin-left: -73px;" placeholder="Flying From" ng-model="flying_from" required>
+                                                    <!-- <label for="select-city">Flying From</label> -->
+                                                    <span style="color:red;" ng-show="myForm1.flying_from.$touched && myForm1.flying_from.$invalid">This feild is required.</span>
+                                                </div>
+                                                <div class="input-field col s2 sm12">
+                                                    <input type="text" id="flying_to" style="margin-left: -62px;" name="flying_to" class="autocomplete flying_code" placeholder="Flying To" ng-model="flying_to" required>
+                                                    <!-- <label for="select-city">Flying To</label> -->
+                                                    <span style="color:red;" ng-show="myForm1.flying_to.$touched && myForm1.flying_to.$invalid">This feild is required.</span>
+                                                </div>
+
+                                                <div class="col-sm-2"> 
+                                                    <i class="fa fa-remove fa-span" ng-click="deletef($index)" style="font-size : 24px; margin-left: -145px; margin-top: 23px; color : red;" ></i>
+                                                </div>
+                                                <div class="col-sm-2"  ng-if="$last">
+                                                    <button type="button" style="margin-left: -323px;  margin-top: 17px;" ng-click="addmore()" class="btn btn-red">Add City </button>
+                                                </div> 
+                                            </div>   
+                                        </div>
+                                    </div> 
+
+                                    <div class="col-sm-3 col-sm-offset-0 checkbox-inline" style="color: #333;" >
+                                        <input type="checkbox" ng-model="ischecked" style="margin-top: -10px;  margin-left: -49px;"  ng-click="toggle()"><span style=" margin-left: -20px;">Create Multi-city Route</span>
+                                    </div> 
+
+                                    <div class="col-sm-3 col-sm-offset-0 checkbox-inline" style="color: #333;" >
+                                        <input type="checkbox" style="margin-top: -10px;  margin-left: -72px;" ><span style=" margin-left: -53px;">Non Stop Flights</span>
+                                    </div>
+
+                                </form>         
+
+                            </div>
+
+                            <div id="hotels" class="tab-pane fade">
+                                <form class="v2-search-form" action="/gethoteldata" name="myForm2"> 
+                                    <div class="row">
+                                        <div class="input-field col s2">
+                                            <input type="text" id="selectcity" name="city" class="autocompletbbbe" placeholder="City, Destination and Hotel Name" autocomplete="off" ng-model="city" required>
+                                            <span style="color:red" ng-show="myForm2.city.$touched && myForm2.city.$invalid">This feild is required.</span>
+                                        </div>
+                                        <div class="input-field col s2">
+                                            <input type="text" id="checkin" name="check_in_date" required>
+                                            <label for="from">Check In</label>
+                                        </div>
+                                        <div class="input-field col s2">
+                                            <input type="text" id="checkout" name="check_out_date" required>
+                                            <label for="to">Check Out</label>
+                                        </div>
+                                           <div class="input-field col s1">
+                                            <select name="no_of_adults">
+                                            <option value="" disabled selected required>No of adults</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="1">4</option>
+                                            <option value="1">5</option>
+                                            <option value="1">6</option>
+                                            </select>
+                                        </div>
+                                            <div class="input-field col s1">
+                                            <select name="no_of_child">
+                                            <option value="" disabled selected required>No of childrens</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="1">4</option>
+                                            <option value="1">5</option>
+                                            <option value="1">6</option>                      
+                                            </select>
+                                        </div>
+                                         <div class="input-field col s2">
+                                            <input type="submit" value="search" class="waves-effect waves-light tourz-sear-btn v2-ser-btn" ng-click="formsubmit(myForm2.$valid,myForm2)"  ng-disabled="myForm2.$invalid">
+                                        </div>
+                                    </div>                                 
+                                </form>       
+                            </div>
+
+                            <div id="tours" class="tab-pane fade">
+                                <form class="v2-search-form" action="/holidays/search" name="myForm3">
+                                    <div class="row">
+                                        <div class="input-field col s3">
+                                            <input type="text" id="p_flying_from" name="from" class="autocomplete" placeholder="Flying From" ng-model="from" autocomplete="off" required>
+                                            <label for="p_flying_from">From</label>
+                                            <span style="color:red" ng-show="myForm3.from.$touched && myForm3.from.$invalid">This feild is required.</span>
+                                        </div>
+                                        <div class="input-field col s3">
+                                            <input type="text" id="p_flying_to" name="to" class="autocomplete" placeholder="Flying To"  ng-model="to" autocomplete="off" required>
+                                            <label for="p_flying_to"> To</label>
+                                            <span style="color:red" ng-show="myForm3.to.$touched && myForm3.to.$invalid">This feild is required.</span>
+                                        </div>
+                                          <div class="input-field col s4">
+                                            <select name="month_of_travel" required>
+                                                <option value="0" selected>Month of Travel(Any)</option>
+                                                <option value="6">May 2018</option>
+                                                <option value="7">June 2018</option>
+                                                <option value="8">July 2018</option>
+                                                <option value="9">August 2018</option>
+                                                <option value="10">September 2018</option>
+                                            </select>
+                                        </div>
+                                          <div class="input-field col s2">
+                                            <input type="submit" value="search" class="waves-effect waves-light tourz-sear-btn v2-ser-btn" ng-click="formsubmit(myForm3.$valid,myForm3)"  ng-disabled="myForm3.$invalid">
+                                        </div>
+                                    </div>                                 
+                                </form>                  
+                            </div>
+
+                            <div id="buses" class="tab-pane fade">
+                                <form class="v2-search-form" action="/holidays/search" name="myForm4">
+                                    <div class="row">
+                                        <div class="input-field col s3">
+                                            <input type="text" id="p_flying_from" name="from" class="autocomplete" placeholder="Flying From" ng-model="from" required>
+                                            <label for="p_flying_from">From</label>
+                                            <span style="color:red" ng-show="myForm4.from.$touched && myForm4.from.$invalid">This feild is required.</span>
+                                        </div>
+                                        <div class="input-field col s3">
+                                            <input type="text" id="p_flying_to" name="to" class="autocomplete" placeholder="Flying To" ng-model="to" required>
+                                            <label for="p_flying_to"> To</label>
+                                            <span style="color:red" ng-show="myForm4.to.$touched && myForm4.to.$invalid">This feild is required.</span>
+                                        </div>
+                                        <div class="input-field col s4">
+                                            <select name="month_of_travel" required>
+                                                <option value="0" selected>Month of Travel(Any)</option>
+                                                <option value="6">May 2018</option>
+                                                <option value="7">June 2018</option>
+                                                <option value="8">July 2018</option>
+                                                <option value="9">August 2018</option>
+                                                <option value="10">September 2018</option>
+                                            </select>
+                                        </div>
+                                        <div class="input-field col s2">
+                                            <input type="submit" value="search" class="waves-effect waves-light tourz-sear-btn v2-ser-btn" ng-click="formsubmit(myForm4.$valid,myForm4)"  ng-disabled="myForm4.$invalid">
+                                        </div>
+                                    </div>                                
+                                </form>             
+                            </div>
+
+                            <div id="visas" class="tab-pane fade">
+                                <form class="v2-search-form" action="/holidays/search" name="myForm5">
+                                    <div class="row">
+                                        <div class="input-field col s3">
+                                            <input type="text" id="p_flying_from" name="from" class="autocomplete" placeholder="Flying From" ng-model="from" required>
+                                            <label for="p_flying_from">From</label>
+                                            <span style="color:red" ng-show="myForm5.from.$touched && myForm5.from.$invalid">This feild is required.</span>
+                                        </div>
+                                        <div class="input-field col s3">
+                                            <input type="text" id="p_flying_to" name="to" class="autocomplete" placeholder="Flying To" ng-model="to" required>
+                                            <label for="p_flying_to"> To</label>
+                                            <span style="color:red" ng-show="myForm5.to.$touched && myForm5.to.$invalid">This feild is required.</span>
+                                        </div>
+                                             <div class="input-field col s4">
+                                            <select name="month_of_travel" required>
+                                                <option value="0" selected>Month of Travel(Any)</option>
+                                                <option value="6">May 2018</option>
+                                                <option value="7">June 2018</option>
+                                                <option value="8">July 2018</option>
+                                                <option value="9">August 2018</option>
+                                                <option value="10">September 2018</option>
+                                            </select>
+                                        </div>
+                                        <div class="input-field col s2">
+                                            <input type="submit" value="search" class="waves-effect waves-light tourz-sear-btn v2-ser-btn" ng-click="formsubmit(myForm5.$valid,myForm5)"  ng-disabled="myForm5.$invalid">
+                                        </div>
+                                    </div> 
+                                </form>
+                            </div>                            
+                            
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+<section>
+
+
+        <div class="rows pad-bot-redu tb-space">
+            <div class="container">
+                <!-- TITLE & DESCRIPTION -->
+                <div class="spe-title">
+                    <h2><span>Tour Packages</span></h2>
+                    <div class="title-line">
+                        <div class="tl-1"></div>
+                        <div class="tl-2"></div>
+                        <div class="tl-3"></div>
+                    </div>
+                    <p>World's leading tour and travels Booking website,Over 30,000 packages worldwide.</p>
+                </div>
+                <div>
+                    <!-- TOUR PLACES-->
+
+                
+                    @foreach($packages->chunk(3) as $chunk_package)
+                        <div class="row">
+                            @foreach($chunk_package as $package)
+                                @php $images=json_decode($package->image); @endphp  
+                                <div class="col-md-4 col-sm-6 col-xs-12 b_packages wow fadeInUp" data-wow-duration="1.5s">
+                                        <div class="v_place_img">
+                                            <img src="http://getflights.aresedge.com/storage/{{$images[1]}}" alt="Tour Booking" title="Tour Booking"/>
+                                        </div> 
+                                    <div class="b_pack rows">
+                                        <div class="col-md-8 col-sm-8">
+                                            <h4><a href="{{route('package_details',$package->slug)}}">{{$package->package_name}}<span class="v_pl_name"></span></a></h4>
+                                        </div>
+                                        <div class="col-md-4 col-sm-4 pack_icon">
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endforeach
+               
+               </div>
+            </div>
+        </div>
+    </section>
+    <!--====== POPULAR TOUR PLACES ==========-->
+    <section>
+        <div class="rows pla pad-bot-redu tb-space">
+            <div class="pla1 p-home container">
+                <!-- TITLE & DESCRIPTION -->
+                <div class="spe-title spe-title-1">
+                    <h2>Top <span>Sight Seeing</span> in this month</h2>
+                    <div class="title-line">
+                        <div class="tl-1"></div>
+                        <div class="tl-2"></div>
+                        <div class="tl-3"></div>
+                    </div>
+                    <p>World's leading tour and travels Booking website,Over 30,000 packages worldwide. Book travel packages and enjoy your holidays with distinctive experience</p>
+                </div>
+                <div class="popu-places-home">
+                    <!-- POPULAR PLACES 1 -->
+                    <div class="col-md-6 col-sm-6 col-xs-12 place">
+                        <div class="col-md-6 col-sm-12 col-xs-12"> <img src="images/place2.jpg" alt="" /> </div>
+                        <div class="col-md-6 col-sm-12 col-xs-12">
+                            <h3><span>Honeymoon Package</span> 7 Days / 6 Nights</h3>
+                            <p>lorem ipsum simplelorem ipsum simplelorem ipsum simplelorem ipsum simple</p> <a href="tour-details.html" class="link-btn">more info</a> </div>
+                    </div>
+                    <!-- POPULAR PLACES 2 -->
+                    <div class="col-md-6 col-sm-6 col-xs-12 place">
+                        <div class="col-md-6 col-sm-12 col-xs-12"> <img src="images/place1.jpg" alt="" /> </div>
+                        <div class="col-md-6 col-sm-12 col-xs-12">
+                            <h3><span>Family package</span> 14 Days / 13 Nights</h3>
+                            <p>lorem ipsum simplelorem ipsum simplelorem ipsum simplelorem ipsum simple</p> <a href="tour-details.html" class="link-btn">more info</a> </div>
+                    </div>
+                </div>
+                <div class="popu-places-home">
+                    <!-- POPULAR PLACES 3 -->
+                    <div class="col-md-6 col-sm-6 col-xs-12 place">
+                        <div class="col-md-6 col-sm-12 col-xs-12"> <img src="images/place3.jpg" alt="" /> </div>
+                        <div class="col-md-6 col-sm-12 col-xs-12">
+                            <h3><span>Weekend Package </span> 3 Days / 2 Nights</h3>
+                            <p>lorem ipsum simplelorem ipsum simplelorem ipsum simplelorem ipsum simple</p> <a href="tour-details.html" class="link-btn">more info</a> </div>
+                    </div>
+                    <!-- POPULAR PLACES 4 -->
+                    <div class="col-md-6 col-sm-6 col-xs-12 place">
+                        <div class="col-md-6 col-sm-12 col-xs-12"> <img src="images/place4.jpg" alt="" /> </div>
+                        <div class="col-md-6 col-sm-12 col-xs-12">
+                            <h3><span>Group Package</span> 10 Days / 9 Nights</h3>
+                            <p>lorem ipsum simplelorem ipsum simplelorem ipsum simplelorem ipsum simple</p> <a href="tour-details.html" class="link-btn">more info</a> </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+        <!--====== REQUEST A QUOTE ==========-->
+    <section>
+        <div class="ho-popu tb-space pad-bot-redu">
+            <div class="rows container">
+         
+                <div class="ho-popu-bod">
+                    <div class="col-md-6">
+                        <div class="hot-page2-hom-pre-head">
+                            <h4>Popular Domestic  <span>Routes in India</span></h4>
+                        </div>
+                        <div class="hot-page2-hom-pre">
+                        
+                            <ul>
+                                <!--LISTINGS-->
+                                <li>
+                                    <a href="hotels-list.html">
+                                       
+                                        <div class="hot-page2-hom-pre-2">
+                                            <h5>Delhi to Mumbai</h5> 
+                                    </a>
+                                </li>
+                                <!--LISTINGS-->
+                              <li>
+                                    <a href="hotels-list.html">
+                                       
+                                        <div class="hot-page2-hom-pre-2">
+                                            <h5>Delhi to Mumbai</h5> 
+                                    </a>
+                                </li>
+                                <!--LISTINGS-->
+                              <li>
+                                    <a href="hotels-list.html">
+                                       
+                                        <div class="hot-page2-hom-pre-2">
+                                            <h5>Delhi to Mumbai</h5> 
+                                    </a>
+                                </li>
+                                <!--LISTINGS-->
+                            <li>
+                                    <a href="hotels-list.html">
+                                       
+                                        <div class="hot-page2-hom-pre-2">
+                                            <h5>Delhi to Mumbai</h5> 
+                                    </a>
+                                </li>
+                                <!--LISTINGS-->
+                             <li>
+                                    <a href="hotels-list.html">
+                                       
+                                        <div class="hot-page2-hom-pre-2">
+                                            <h5>Delhi to Mumbai</h5> 
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="hot-page2-hom-pre-head">
+                            <h4>Popular International  <span>Routes from India</span></h4>
+                        </div>
+                        <div class="hot-page2-hom-pre">
+                            <ul>
+                                <!--LISTINGS-->
+                            <li>
+                                    <a href="hotels-list.html">
+                                       
+                                        <div class="hot-page2-hom-pre-2">
+                                            <h5>Mumbai to Dubai Flights</h5> 
+                                    </a>
+                                </li>
+                                <!--LISTINGS-->
+                               <li>
+                                    <a href="hotels-list.html">
+                                       
+                                        <div class="hot-page2-hom-pre-2">
+                                            <h5>Mumbai to Dubai Flights</h5> 
+                                    </a>
+                                </li>
+                                <!--LISTINGS-->
+                                <li>
+                                    <a href="hotels-list.html">
+                                       
+                                        <div class="hot-page2-hom-pre-2">
+                                            <h5>Mumbai to Dubai Flights</h5> 
+                                    </a>
+                                </li>
+                                <!--LISTINGS-->
+                            <li>
+                                <a href="hotels-list.html">
+                                    
+                                    <div class="hot-page2-hom-pre-2">
+                                    <h5>Mumbai to Dubai Flights</h5> 
+                                </a>
+                            </li>
+                                <!--LISTINGS-->
+                           <li>
+                                    <a href="hotels-list.html">
+                                       
+                                        <div class="hot-page2-hom-pre-2">
+                                            <h5>Mumbai to Dubai Flights</h5> 
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                   
+                </div>
+            </div>
+        </div>
+    </section>
+    <!--====== TIPS BEFORE TRAVEL ==========-->
+    <section>
+        <div class="rows tips tips-home tb-space home_title">
+            <div class="container tips_1">
+                <!-- TIPS BEFORE TRAVEL -->
+                <div class="col-md-4 col-sm-6 col-xs-12">
+                    <h3>Tips Before Travel</h3>
+                    <div class="tips_left tips_left_1">
+                        <h5>Bring copies of your passport</h5>
+                        <p>Aliquam pretium id justo eget tristique. Aenean feugiat vestibulum blandit.</p>
+                    </div>
+                    <div class="tips_left tips_left_2">
+                        <h5>Register with your embassy</h5>
+                        <p>Mauris efficitur, ante sit amet rhoncus malesuada, orci justo sollicitudin.</p>
+                    </div>
+                    <div class="tips_left tips_left_3">
+                        <h5>Always have local cash</h5>
+                        <p>Donec et placerat ante. Etiam et velit in massa. </p>
+                    </div>
+                </div>
+                <!-- CUSTOMER TESTIMONIALS -->
+                <div class="col-md-8 col-sm-6 col-xs-12 testi-2">
+                    <!-- TESTIMONIAL TITLE -->
+                    <h3>Customer Testimonials</h3>
+                    <div class="testi">
+                        <h4>John William</h4>
+                        <p>Ut sed sem quis magna ultricies lacinia et sed tortor. Ut non tincidunt nisi, non elementum lorem. Aliquam gravida sodales</p> <address>Illinois, United States of America</address> 
+                    </div>
+                    <!-- ARRANGEMENTS & HELPS -->
+                    <!-- <h3>Arrangement & Helps</h3>
+                    <div class="arrange"> -->
+                        <!-- <ul> -->
+                            <!-- LOCATION MANAGER -->
+                            <!-- <li style="height:75px; width:350px; background-color:black;" align="center">
+                                <a href="#">Customer Support</a>
+                            </li> -->
+                            <!-- PRIVATE GUIDE -->
+                            <!-- <li>
+                                <a href="#"><img src="images/Private-Guide.png" alt=""> </a>
+                            </li> -->
+                            <!-- ARRANGEMENTS -->
+                            <!-- <li>
+                                <a href="#"><img src="images/Arrangements.png" alt=""> </a>
+                            </li> -->
+                            <!-- EVENT ACTIVITIES -->
+                            <!-- <li>
+                                <a href="#"><img src="images/Events-Activities.png" alt=""> </a>
+                            </li> -->
+                        <!-- </ul> -->
+                  <!--  </div>-->
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+
+@section('script')
+ 
+<script type="text/javascript">
+
+    $( function() {
+        $( "#checkin" ).datepicker({
+            altFormat: "d MM,DD, yy"
+        });
+
+        $(".tab_btn_class").click(function(e) {
+            e.preventDefault()
+            var indexposition = $(this).attr('value')
+            $(".hide_show").hide()
+            $("#section"+indexposition).show()
+        })
+    });
+
+    $( function() {
+         $( "#checkout" ).datepicker({
+             altFormat: "d MM, DD, yy"
+         });
+    });
+
+     $( function() {
+         $( "#from" ).datepicker({
+             altFormat: "d MM,DD, yy"
+         });
+    });
+
+    $( function() {
+         $( "#to" ).datepicker({
+             altFormat: "d MM, DD, yy"
+         });
+    });
+
+
+ //----------------------------------------  FETCH ALL CITIES FOR HOTELS ---------------------------------
+    $(document).ready(function() {
+        var datacity
+        $.get( "/api/hotelcitycode/1", function( data ) {
+            datacity = data
+            var obj = datacity.reduce(function(o, val) { o[val] = null; return o; }, {});
+            var allcities = (JSON.stringify(obj));
+        
+           $('#selectcity').autocomplete({  
+              data: JSON.parse(allcities),
+              limit: 8, // The max amount of results that can be shown at once. Default: Infinity.
+              onAutocomplete: function(val) {
+              // Callback function when value is autcompleted.
+              },
+              minLength: 1, // The minimum length of the input for the autocomplete to start. Default: 1.
+            });
+        });
+
+        //----------------------------------------- FETCH ALL CITIES FOR Flight -----------------------------
+      
+        $.get( "/api/airportcitycountry/1", function( data ) {
+            var dataair = data
+            var objair = dataair.reduce(function(o, val) { o[val] = null; return o; }, {});
+            var allaircities = (JSON.stringify(objair));
+            
+            $('.flying_code').autocomplete({  
+                data: JSON.parse(allaircities),
+                limit: 8, // The max amount of results that can be shown at once. Default: Infinity.
+                onAutocomplete: function(val) {
+                // Callback function when value is autcompleted.
+                },
+                minLength: 1, // The minimum length of the input for the autocomplete to start. Default: 1.
+            });
+        });   
+
+        // holidays city list
+        
+        $.get( "/api/package/city/data/1", function( data ) {
+            var datapackage = data
+            var objpackage = datapackage.reduce(function(o, val) { o[val] = null; return o; }, {});
+            var allpackagecities = (JSON.stringify(objpackage));
+            
+            $('#p_flying_to').autocomplete({  
+                data: JSON.parse(allpackagecities),
+                limit: 8, // The max amount of results that can be shown at once. Default: Infinity.
+                onAutocomplete: function(val) {
+                // Callback function when value is autcompleted.
+                },
+                minLength: 1, // The minimum length of the input for the autocomplete to start. Default: 1.
+            });
+        });  
+
+        $.get( "/api/hotelcitycode/1", function( data ) {
+            var datapackageto = data
+            var objpackageto = datapackageto.reduce(function(o, val) { o[val] = null; return o; }, {});
+            var allpackagecitiesto = (JSON.stringify(objpackageto));
+            
+            $('#p_flying_from').autocomplete({  
+                data: JSON.parse(allpackagecitiesto),
+                limit: 8, // The max amount of results that can be shown at once. Default: Infinity.
+                onAutocomplete: function(val) {
+                // Callback function when value is autcompleted.
+                },
+                minLength: 1, // The minimum length of the input for the autocomplete to start. Default: 1.
+            });
+        });  
+
+    });
+
+//======================================JQUERY VALIDATION OF ALL FORMS(Atul)====================================
+
+
+    var app = angular.module('myApp', []);
+    app.controller('validateCtrl', function($scope, $http) {
+        $scope.flying_from = null
+        $scope.flying_to = null
+        $scope.departure_date = null
+        $scope.arrival_date = null
+        $scope.options = [] 
+        $scope.ischecked = false
+
+        $scope.addmore = function(){ 
+          
+            if ($scope.options.length < 4) {
+
+               $scope.options.push('') 
+            }
+        } 
+         
+        $scope.deletef = function(index){
+            if ($scope.options.length == 1) {
+                $scope.ischecked = false
+            }
+           var indexpo = $scope.options.indexOf(index); 
+           $scope.options.splice(indexpo, 1);
+            
+        } 
+
+        $scope.toggle = function() {
+            if ($scope.options.length > 0) {
+                $scope.options = []
+
+            }else{
+                $scope.options = ['']
+            }
+        }
+
+    });
+
+
+    //    app.controller('admincontroller', function($scope) {
+    //     $scope.showDiv = false;
+    //     $scope.toggle = function() {
+    //         $scope.myVar = !$scope.myVar;
+    //     };
+    // });
+
+
+
+
+
+// var app = angular.module('myApp', []);
+ //     app.controller('validateHotelCtrl', function() {
+     
+ // });
+// var app = angular.module('myApp', []);
+//      app.controller('validateTourCtrl', function() {
+     
+//  });
+// var app = angular.module('myApp', []);
+//      app.controller('validateBusCtrl', function() {
+     
+//  });
+// var app = angular.module('myApp', []);
+//      app.controller('validateVisaCtrl', function() {
+     
+//  });
+
+
+</script>
+
+@endsection
+
